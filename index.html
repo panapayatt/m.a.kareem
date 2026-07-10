@@ -19,6 +19,12 @@
     --shadow: rgba(44,36,24,0.18);
   }
 
+  /* Theme Classes */
+  body.theme-green { --maroon: #2e7d32; --maroon-deep: #1b5e20; }
+  body.theme-blue { --maroon: #1976d2; --maroon-deep: #0d47a1; }
+  body.theme-cyan { --maroon: #00838f; --maroon-deep: #006064; }
+  body.theme-black { --maroon: #424242; --maroon-deep: #212121; }
+
   .login-screen{
     position:fixed;inset:0;
     background:
@@ -67,6 +73,7 @@
     cursor:default;
     user-select:none;
     font-family:'Courier Prime',monospace;
+    touch-action: manipulation;
   }
 
   *{box-sizing:border-box;}
@@ -96,7 +103,7 @@
     background: repeating-linear-gradient(90deg, var(--gold) 0 14px, transparent 14px 22px);
     opacity:0.55;
   }
-  .header-top{display:flex;justify-content:space-between;align-items:flex-start;}
+  .header-top{display:flex;justify-content:space-between;align-items:center;}
   header h1{
     margin:0;
     font-size:1.5rem;
@@ -111,17 +118,55 @@
     opacity:0.75;
     margin-top:4px;
   }
-  .sync-badge{
-    font-family:'Courier Prime',monospace;
-    font-size:0.66rem;
-    padding:5px 9px;
-    border-radius:12px;
-    background:rgba(255,255,255,0.12);
-    cursor:pointer;
-    white-space:nowrap;
+
+  /* Dropdown Menu Styles */
+  .menu-container { position: relative; display: inline-block; }
+  .menu-btn { 
+    background: rgba(255,255,255,0.18); 
+    border: none; 
+    color: white; 
+    padding: 6px 14px; 
+    border-radius: 8px; 
+    font-size: 1.4rem; 
+    font-weight: bold;
+    cursor: pointer; 
+    transition: background 0.2s;
   }
-  .sync-badge.ok{background:rgba(76,175,98,0.25);}
-  .sync-badge.err{background:rgba(200,60,60,0.35);}
+  .menu-btn:hover { background: rgba(255,255,255,0.3); }
+  .menu-content { 
+    display: none; 
+    position: absolute; 
+    right: 0; 
+    top: 100%; 
+    margin-top: 10px; 
+    background: var(--paper-light); 
+    min-width: 200px; 
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3); 
+    border-radius: 8px; 
+    overflow: hidden; 
+    z-index: 100; 
+    border: 1px solid var(--line); 
+  }
+  .menu-content.show { display: block; }
+  .menu-item { 
+    display: block; 
+    padding: 14px 18px; 
+    text-decoration: none; 
+    color: var(--maroon-deep); 
+    font-weight: 600; 
+    font-size: 0.9rem; 
+    border: none;
+    border-bottom: 1px solid var(--line); 
+    cursor: pointer; 
+    background: transparent; 
+    width: 100%; 
+    text-align: left; 
+    font-family: inherit; 
+    transition: background 0.1s;
+  }
+  .menu-item:last-child { border-bottom: none; }
+  .menu-item:hover { background: #efe3c5; }
+  .menu-item.logout { color: #d32f2f; font-weight: bold; }
 
   .summary-strip{
     display:grid;
@@ -434,6 +479,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
+<!-- Login screen -->
 <div id="loginScreen" class="login-screen">
   <div class="login-box">
     <div class="login-logo">📖</div>
@@ -455,47 +501,90 @@
 
 <div id="appRoot" style="display:none;">
 
-<header>
-  <div class="header-top">
-    <div>
-      <h1>📖 പയറ്റ് കണക്ക്</h1>
-      <div class="sub">PAYAT LEDGER &middot; MONEY LENDING RECORD</div>
+  <header>
+    <div class="header-top">
+      <div>
+        <h1>📖 പയറ്റ് കണക്ക്</h1>
+        <div class="sub">PAYAT LEDGER &middot; RECORD</div>
+      </div>
+      <!-- Dropdown Menu -->
+      <div class="menu-container">
+        <button class="menu-btn" onclick="toggleMenu()">⋮</button>
+        <div id="mainMenu" class="menu-content">
+          <button class="menu-item" onclick="openImportModal(); toggleMenu();">📊 Excel Import</button>
+          <button class="menu-item" onclick="openAddUserModal(); toggleMenu();">👤 പുതിയ User</button>
+          <button class="menu-item" onclick="openChangePasswordModal(); toggleMenu();">🔑 Password മാറ്റുക</button>
+          <button class="menu-item" onclick="openThemeModal(); toggleMenu();">🎨 തീം (Theme)</button>
+          <button class="menu-item" id="adminMenuSync" style="display:none;" onclick="openSyncModal(); toggleMenu();">⚙ Sheets Setup</button>
+          <button class="menu-item logout" onclick="logout()">⎋ Logout</button>
+        </div>
+      </div>
     </div>
-    <div style="display:flex;gap:6px;">
-      <div class="sync-badge" id="syncBadge" style="display:none;" onclick="handleSyncBadgeClick()">⚙ Sheets</div>
-      <button class="sync-badge" style="background:rgba(255,255,255,0.18);border:none;font-weight:bold;" onclick="logout()">Logout</button>
+  </header>
+
+  <div class="summary-strip">
+    <div class="sum-card">
+      <div class="label">മൊത്തം പയറ്റിയത്</div>
+      <div class="value" id="sumOut">₹0</div>
+    </div>
+    <div class="sum-card">
+      <div class="label">തിരിച്ച് കിട്ടാനുള്ളത്</div>
+      <div class="value" id="sumExpected">₹0</div>
+    </div>
+    <div class="sum-card green">
+      <div class="label">കിട്ടാൻ ബാക്കി (Net)</div>
+      <div class="value" id="sumDue">₹0</div>
     </div>
   </div>
-</header>
 
-<div class="summary-strip">
-  <div class="sum-card">
-    <div class="label">മൊത്തം പയറ്റിയത്</div>
-    <div class="value" id="sumOut">₹0</div>
+  <div class="search-row">
+    <input type="text" id="searchBox" placeholder="🔍 ID അല്ലെങ്കിൽ പേര് വെച്ച് സെർച്ച് ചെയ്യുക..." oninput="renderAll()">
   </div>
-  <div class="sum-card">
-    <div class="label">തിരിച്ച് കിട്ടാനുള്ളത്</div>
-    <div class="value" id="sumExpected">₹0</div>
+
+  <div class="toolbar">
+    <button class="btn btn-primary" onclick="openPersonModal()">+ പുതിയ ആൾ</button>
+    <button class="btn btn-ghost" id="exportAllBtn" onclick="exportAllPdf()">📄 All PDF</button>
   </div>
-  <div class="sum-card green">
-    <div class="label">കിട്ടാൻ ബാക്കി (Net)</div>
-    <div class="value" id="sumDue">₹0</div>
+
+  <main id="mainList"></main>
+
+</div><!-- /appRoot -->
+
+<!-- Modals -->
+
+<!-- Theme Selection Modal -->
+<div class="modal-overlay" id="themeModalOverlay">
+  <div class="modal">
+    <h2>കളർ തീം മാറ്റുക</h2>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:15px;">
+      <button class="btn" style="background:#7a1f1f; color:#fff;" onclick="setTheme('default')">Maroon</button>
+      <button class="btn" style="background:#2e7d32; color:#fff;" onclick="setTheme('green')">Green</button>
+      <button class="btn" style="background:#1976d2; color:#fff;" onclick="setTheme('blue')">Blue</button>
+      <button class="btn" style="background:#00838f; color:#fff;" onclick="setTheme('cyan')">Cyan</button>
+      <button class="btn" style="background:#424242; color:#fff;" onclick="setTheme('black')">Black</button>
+    </div>
+    <div class="modal-actions" style="margin-top:20px;">
+      <button class="btn btn-ghost" style="width:100%" onclick="closeThemeModal()">അടയ്ക്കുക</button>
+    </div>
   </div>
 </div>
 
-<div class="search-row">
-  <input type="text" id="searchBox" placeholder="🔍 ID അല്ലെങ്കിൽ പേര് വെച്ച് സെർച്ച് ചെയ്യുക..." oninput="renderAll()">
+<!-- Change Password Modal -->
+<div class="modal-overlay" id="changePasswordModalOverlay">
+  <div class="modal">
+    <h2>പാസ്‌വേഡ് മാറ്റുക</h2>
+    <div class="field">
+      <label>പുതിയ പാസ്‌വേഡ് നൽകുക</label>
+      <input type="text" id="newPasswordInput" placeholder="New Password">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeChangePasswordModal()">റദ്ദാക്കുക</button>
+      <button class="btn btn-primary" onclick="processChangePassword()">സേവ് ചെയ്യുക</button>
+    </div>
+  </div>
 </div>
 
-<div class="toolbar">
-  <button class="btn btn-primary" onclick="openPersonModal()">+ പുതിയ ആൾ</button>
-  <button class="btn btn-ghost" id="exportAllBtn" onclick="exportAllPdf()">📄 All PDF</button>
-  <button class="btn btn-ghost" onclick="openImportModal()">📊 Import</button>
-  <button class="btn btn-ghost" onclick="openAddUserModal()">👤 +User</button>
-</div>
-
-<main id="mainList"></main>
-
+<!-- New / Edit person modal -->
 <div class="modal-overlay" id="personModalOverlay">
   <div class="modal">
     <h2 id="personModalTitle">പുതിയ ഇടപാട്</h2>
@@ -547,6 +636,7 @@
   </div>
 </div>
 
+<!-- Add/Edit transaction modal -->
 <div class="modal-overlay" id="txModalOverlay">
   <div class="modal">
     <h2 id="txModalTitle">ഇടപാട് ചേർക്കുക</h2>
@@ -584,20 +674,21 @@
   </div>
 </div>
 
+<!-- Admin Only Sync setup modal -->
 <div class="modal-overlay" id="syncModalOverlay">
   <div class="modal">
     <h2>Admin Area: Sheets Sync</h2>
-    <div class="sync-note">
+    <div class="sync-note" style="max-height:100px; overflow-y:auto;">
       <b>എങ്ങനെ സെറ്റപ്പ് ചെയ്യാം:</b><br>
-      1. ഒരു പുതിയ Google Sheet ഉണ്ടാക്കുക.<br>
+      1. പുതിയ മാറ്റങ്ങൾ വർക്ക് ചെയ്യാൻ, നിങ്ങളുടെ Google Sheet-ൽ <b>'Users'</b> എന്നൊരു ടാബ് ഉണ്ടെങ്കിൽ അത് Delete ചെയ്യുക (Data ടാബ് കളയരുത്!).<br>
       2. Extensions → Apps Script തുറക്കുക.<br>
-      3. താഴെ "സ്ക്രിപ്റ്റ് കോപ്പി ചെയ്യുക" ബട്ടൺ അമർത്തി code കോപ്പി ചെയ്ത് അവിടെ paste ചെയ്യുക (നിലവിലുള്ളത് മുഴുവൻ മാറ്റി).<br>
-      4. Deploy → New deployment → Type: <b>Web app</b> → Execute as: Me → Who has access: <b>Anyone</b> → Deploy.<br>
-      5. കിട്ടുന്ന Web App URL ഇവിടെ താഴെ paste ചെയ്യുക, "സേവ് &amp; ടെസ്റ്റ്" അമർത്തുക.<br>
-      6. അതിന് ശേഷം താഴെ "Users" section വന്നാൽ അഡ്മിൻ യൂസറിനെ <b>admin</b> എന്ന പേരിൽ ചേർക്കുക.
+      3. താഴെ കോപ്പി ചെയ്ത് പഴയത് മാറ്റി അവിടെ paste ചെയ്യുക.<br>
+      4. Deploy → <b>New deployment</b> → <b>Web app</b> → <b>Anyone</b> → Deploy.<br>
+      5. പുതിയ URL ഇവിടെ paste ചെയ്ത് "സേവ് &amp; ടെസ്റ്റ്" അമർത്തുക.<br>
+      6. താഴെ "+ പുതിയ User ചേർക്കുക" വഴി അഡ്മിൻ യൂസറിനെ <b>admin</b> എന്ന പേരിൽ ചേർക്കുക.
     </div>
     <button class="btn btn-ghost btn-sm" style="width:100%;margin-bottom:8px;" onclick="copyAppsScript()">📋 Script Copy ചെയ്യുക</button>
-    <textarea id="scriptTextarea" readonly rows="5" onclick="this.select()" style="width:100%;font-family:monospace;font-size:0.7rem;padding:8px;border:1.5px solid var(--line);border-radius:5px;background:#fff;resize:vertical;margin-bottom:8px;"></textarea>
+    <textarea id="scriptTextarea" readonly rows="3" onclick="this.select()" style="width:100%;font-family:monospace;font-size:0.7rem;padding:8px;border:1.5px solid var(--line);border-radius:5px;background:#fff;resize:vertical;margin-bottom:8px;"></textarea>
     <div class="field">
       <label>Web App URL</label>
       <input type="text" id="sheetUrl" placeholder="https://script.google.com/macros/s/.../exec">
@@ -609,13 +700,14 @@
     </div>
 
     <div id="userMgmtSection" style="display:none;margin-top:24px;border-top:2px dashed var(--line);padding-top:16px;">
-      <h2 style="font-size:1rem;">All Users</h2>
-      <div id="userListBox" style="margin-bottom:12px;"></div>
+      <h2 style="font-size:1rem;">All Users & Subscriptions</h2>
+      <div id="userListBox" style="margin-bottom:12px; max-height:200px; overflow-y:auto; border:1px solid #eee; padding:5px;"></div>
       <button class="btn btn-ghost btn-sm" style="width:100%;" onclick="openAddUserModal()">+ പുതിയ User ചേർക്കുക</button>
     </div>
   </div>
 </div>
 
+<!-- Add user modal -->
 <div class="modal-overlay" id="addUserModalOverlay">
   <div class="modal">
     <h2>പുതിയ User</h2>
@@ -627,6 +719,14 @@
       <label>Password</label>
       <input type="text" id="newUserPass" placeholder="Password">
     </div>
+    <div class="field">
+      <label>കാലാവധി (Validity)</label>
+      <select id="newUserDays">
+        <option value="90">90 ദിവസം (3 മാസം)</option>
+        <option value="180">180 ദിവസം (6 മാസം)</option>
+        <option value="365" selected>365 ദിവസം (1 വർഷം)</option>
+      </select>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeAddUserModal()">റദ്ദാക്കുക</button>
       <button class="btn btn-primary" onclick="saveNewUser()">ചേർക്കുക</button>
@@ -634,6 +734,7 @@
   </div>
 </div>
 
+<!-- Excel Import Modal -->
 <div class="modal-overlay" id="importModalOverlay">
   <div class="modal">
     <h2>Excel-ൽ നിന്നും ഡാറ്റ ചേർക്കുക</h2>
@@ -651,9 +752,9 @@
   </div>
 </div>
 
-</div><script>
-let ledger = []; // {id, name, phone, transactions:[{id,date,place,type,amount,expected,note}]}
-let sheetUrl = 'https://script.google.com/macros/s/AKfycby7sPQFkr2eFKmQTwdoH8B-ubDzuT7A4-TEz9WI7Eb5H6EkiAnUcmytYVK5pthHZNmfRg/exec';
+<script>
+let ledger = []; 
+let sheetUrl = 'https://https://script.google.com/macros/s/AKfycby7sPQFkr2eFKmQTwdoH8B-ubDzuT7A4-TEz9WI7Eb5H6EkiAnUcmytYVK5pthHZNmfRg/exec';
 let syncTimer = null;
 
 function uid(){return 't'+Date.now()+Math.floor(Math.random()*1000);}
@@ -663,6 +764,43 @@ function fmtDate(d){
   if(!d) return '-';
   const dt = new Date(d+'T00:00:00');
   return dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+}
+
+// Theme Management
+function openThemeModal() { document.getElementById('themeModalOverlay').classList.add('open'); }
+function closeThemeModal() { document.getElementById('themeModalOverlay').classList.remove('open'); }
+function setTheme(theme) {
+  document.body.className = theme === 'default' ? '' : 'theme-' + theme;
+  localStorage.setItem('payat_theme', theme);
+  closeThemeModal();
+}
+function loadTheme() {
+  const t = localStorage.getItem('payat_theme');
+  if(t) { setTheme(t); }
+}
+function getThemeColor() {
+  if(document.body.classList.contains('theme-green')) return '#2e7d32';
+  if(document.body.classList.contains('theme-blue')) return '#1976d2';
+  if(document.body.classList.contains('theme-cyan')) return '#00838f';
+  if(document.body.classList.contains('theme-black')) return '#424242';
+  return '#7a1f1f'; // default maroon
+}
+
+// Menu Toggle Logic
+function toggleMenu() {
+  document.getElementById("mainMenu").classList.toggle("show");
+}
+
+window.onclick = function(event) {
+  if (!event.target.matches('.menu-btn')) {
+    var dropdowns = document.getElementsByClassName("menu-content");
+    for (var i = 0; i < dropdowns.length; i++) {
+      var openDropdown = dropdowns[i];
+      if (openDropdown.classList.contains('show')) {
+        openDropdown.classList.remove('show');
+      }
+    }
+  }
 }
 
 // ---------- computation ----------
@@ -763,7 +901,7 @@ function toggleOpen(id){
   renderAll();
 }
 
-// ---------- person modal (new + edit name/phone only) ----------
+// ---------- person modal ----------
 function openPersonModal(){
   document.getElementById('editPersonId').value = '';
   document.getElementById('personModalTitle').textContent = 'പുതിയ ഇടപാട്';
@@ -839,7 +977,7 @@ function savePerson(){
   queueSync();
 }
 
-// ---------- tx modal (add + edit) ----------
+// ---------- tx modal ----------
 function openTxModal(personId, type){
   document.getElementById('txPersonId').value = personId;
   document.getElementById('txId').value = '';
@@ -921,6 +1059,7 @@ function deletePerson(personId){
 // ================== PDF EXPORT ==================
 function buildPersonHtmlBlock(p){
   const t = personTotals(p);
+  const themeColor = getThemeColor();
   const rows = p.transactions.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(tx=>{
     const typeLabel = tx.type==='out' ? 'പയറ്റി' : 'തിരിച്ച് കിട്ടി';
     const expectedCol = tx.type==='out' ? fmt(tx.expected||tx.amount) : '-';
@@ -935,7 +1074,7 @@ function buildPersonHtmlBlock(p){
   }).join('');
 
   return `<div style="margin-bottom:26px;page-break-inside:avoid;">
-    <div style="background:#7a1f1f;color:#faf4e6;padding:10px 14px;border-radius:6px 6px 0 0;">
+    <div style="background:${themeColor};color:#faf4e6;padding:10px 14px;border-radius:6px 6px 0 0;">
       <div style="font-size:16px;font-weight:700;">${p.customId ? '['+p.customId+'] ' : ''}${p.name}</div>
       <div style="font-size:11px;opacity:0.85;">${p.phone||''}</div>
     </div>
@@ -952,13 +1091,14 @@ function buildPersonHtmlBlock(p){
       </thead>
       <tbody>${rows || '<tr><td colspan="6" style="padding:8px;border:1px solid #ccc;">ഇടപാടുകൾ ഇല്ല</td></tr>'}</tbody>
     </table>
-    <div style="text-align:right;padding:8px 10px;background:#f4ecd8;border:1px solid #ccc;border-top:none;font-size:13px;font-weight:700;color:${t.due>0?'#7a1f1f':'#2f5d3a'};">
+    <div style="text-align:right;padding:8px 10px;background:#f4ecd8;border:1px solid #ccc;border-top:none;font-size:13px;font-weight:700;color:${t.due>0?themeColor:'#2f5d3a'};">
       ${t.due>0 ? 'കിട്ടാൻ ബാക്കി' : (t.due<0 ? 'അധികം കിട്ടി' : 'തീർന്നു')}: ${fmt(Math.abs(t.due))}
     </div>
   </div>`;
 }
 
 async function renderHtmlToPdf(innerHtml, filename, title){
+  const themeColor = getThemeColor();
   const container = document.createElement('div');
   container.style.position='fixed';
   container.style.left='-9999px';
@@ -969,7 +1109,7 @@ async function renderHtmlToPdf(innerHtml, filename, title){
   container.style.fontFamily="'Noto Sans Malayalam', sans-serif";
   container.innerHTML = `
     <div style="text-align:center;margin-bottom:20px;border-bottom:3px solid #a87b1f;padding-bottom:12px;">
-      <div style="font-size:22px;font-weight:700;color:#5c1414;">📖 ${title}</div>
+      <div style="font-size:22px;font-weight:700;color:${themeColor};">📖 ${title}</div>
       <div style="font-size:11px;color:#7a6c4f;letter-spacing:1px;">PAYAT LEDGER &middot; ${new Date().toLocaleDateString('en-GB')}</div>
     </div>
     ${innerHtml}
@@ -1002,12 +1142,13 @@ async function renderHtmlToPdf(innerHtml, filename, title){
   }
 }
 
-// "All PDF" ബട്ടൺ ഞെക്കുമ്പോൾ ബ്രൗസർ ക്രാഷ് ആകാതിരിക്കാൻ ചെറിയ ഭാഗങ്ങളാക്കി PDF ഉണ്ടാക്കുന്നു
+// "All PDF" കോംപാക്റ്റ് എക്സൽ ഡിസൈൻ
 async function exportAllPdf(){
   if(ledger.length===0){ alert('ഡാറ്റ ഒന്നും ഇല്ല.'); return; }
   
   const btn = document.getElementById('exportAllBtn');
   const oldText = btn.textContent;
+  const themeColor = getThemeColor();
   
   btn.textContent = '⏳ PDF റെഡിയാകുന്നു...';
   btn.disabled = true;
@@ -1020,28 +1161,94 @@ async function exportAllPdf(){
       const pageHeight = pdf.internal.pageSize.getHeight();
       let isFirstPage = true;
 
-      // കാൻവാസ് ക്രാഷ് ആകാതിരിക്കാൻ 3 പേരുടെ ഡാറ്റ വീതം എടുക്കുന്നു (Chunking)
-      const chunkSize = 3; 
+      const chunkSize = 10; 
       for (let i = 0; i < ledger.length; i += chunkSize) {
         const chunk = ledger.slice(i, i + chunkSize);
-        const html = chunk.map(p => buildPersonHtmlBlock(p)).join('');
+        
+        let rowsHtml = '';
+        chunk.forEach(p => {
+          const t = personTotals(p);
+          const nameStr = (p.customId ? `[${p.customId}] ` : '') + p.name;
+          const balStr = t.due > 0 ? `കിട്ടാൻ: ${fmt(Math.abs(t.due))}` : (t.due < 0 ? `അധികം: ${fmt(Math.abs(t.due))}` : 'തീർന്നു');
+          const dueColor = t.due > 0 ? themeColor : '#2f5d3a';
+          
+          if(p.transactions.length === 0) {
+            rowsHtml += `<tr>
+              <td style="border:1px solid #888; padding:5px; font-weight:bold;">${nameStr}</td>
+              <td style="border:1px solid #888; padding:5px;">${p.phone||'-'}</td>
+              <td colspan="6" style="border:1px solid #888; padding:5px; text-align:center; color:#555;">ഇടപാടുകൾ ഇല്ല</td>
+              <td style="border:1px solid #888; padding:5px; font-weight:bold; color:${dueColor};">${balStr}</td>
+            </tr>`;
+          } else {
+            const sortedTx = p.transactions.slice().sort((a,b)=>a.date.localeCompare(b.date));
+            sortedTx.forEach((tx, idx) => {
+              const typeLabel = tx.type==='out' ? 'പയറ്റി' : 'തിരിച്ചു';
+              if(idx === 0) {
+                rowsHtml += `<tr>
+                  <td rowspan="${sortedTx.length}" style="border:1px solid #888; padding:5px; vertical-align:top; font-weight:bold;">${nameStr}</td>
+                  <td rowspan="${sortedTx.length}" style="border:1px solid #888; padding:5px; vertical-align:top;">${p.phone||'-'}</td>
+                  <td style="border:1px solid #888; padding:5px;">${fmtDate(tx.date)}</td>
+                  <td style="border:1px solid #888; padding:5px;">${tx.place||'-'}</td>
+                  <td style="border:1px solid #888; padding:5px;">${typeLabel}</td>
+                  <td style="border:1px solid #888; padding:5px; text-align:right;">${fmt(tx.amount)}</td>
+                  <td style="border:1px solid #888; padding:5px; text-align:right;">${tx.type==='out'?fmt(tx.expected||tx.amount):'-'}</td>
+                  <td style="border:1px solid #888; padding:5px;">${tx.note||''}</td>
+                  <td rowspan="${sortedTx.length}" style="border:1px solid #888; padding:5px; vertical-align:top; font-weight:bold; color:${dueColor};">${balStr}</td>
+                </tr>`;
+              } else {
+                rowsHtml += `<tr>
+                  <td style="border:1px solid #888; padding:5px;">${fmtDate(tx.date)}</td>
+                  <td style="border:1px solid #888; padding:5px;">${tx.place||'-'}</td>
+                  <td style="border:1px solid #888; padding:5px;">${typeLabel}</td>
+                  <td style="border:1px solid #888; padding:5px; text-align:right;">${fmt(tx.amount)}</td>
+                  <td style="border:1px solid #888; padding:5px; text-align:right;">${tx.type==='out'?fmt(tx.expected||tx.amount):'-'}</td>
+                  <td style="border:1px solid #888; padding:5px;">${tx.note||''}</td>
+                </tr>`;
+              }
+            });
+          }
+        });
+
+        const tableHtml = `
+          <table style="width:100%; border-collapse:collapse; font-size:10px; font-family:'Noto Sans Malayalam', sans-serif;">
+            <thead style="background:#e0e0e0;">
+              <tr>
+                <th style="border:1px solid #888; padding:6px; text-align:left;">ID & പേര്</th>
+                <th style="border:1px solid #888; padding:6px; text-align:left;">ഫോൺ</th>
+                <th style="border:1px solid #888; padding:6px; text-align:left;">തിയ്യതി</th>
+                <th style="border:1px solid #888; padding:6px; text-align:left;">സ്ഥലം</th>
+                <th style="border:1px solid #888; padding:6px; text-align:left;">തരം</th>
+                <th style="border:1px solid #888; padding:6px; text-align:right;">തുക</th>
+                <th style="border:1px solid #888; padding:6px; text-align:right;">കിട്ടാനുള്ളത്</th>
+                <th style="border:1px solid #888; padding:6px; text-align:left;">കുറിപ്പ്</th>
+                <th style="border:1px solid #888; padding:6px; text-align:left;">ബാക്കി (Net)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        `;
         
         const container = document.createElement('div');
         container.style.position='fixed';
         container.style.left='-9999px';
         container.style.top='0';
-        container.style.width='760px';
+        container.style.width='780px';
         container.style.background='#fff';
-        container.style.padding='24px';
-        container.style.fontFamily="'Noto Sans Malayalam', sans-serif";
+        container.style.padding='20px';
         
         container.innerHTML = `
           ${isFirstPage ? `
-          <div style="text-align:center;margin-bottom:20px;border-bottom:3px solid #a87b1f;padding-bottom:12px;">
-            <div style="font-size:22px;font-weight:700;color:#5c1414;">📖 പയറ്റ് കണക്ക് - എല്ലാവരും</div>
-            <div style="font-size:11px;color:#7a6c4f;letter-spacing:1px;">PAYAT LEDGER &middot; ${new Date().toLocaleDateString('en-GB')}</div>
-          </div>` : ''}
-          ${html}
+          <div style="text-align:center;margin-bottom:15px;border-bottom:2px solid #000;padding-bottom:10px;">
+            <div style="font-size:20px;font-weight:700;color:${themeColor};">പയറ്റ് കണക്ക് - All Transactions</div>
+            <div style="font-size:11px;color:#555;">Report Generated: ${new Date().toLocaleDateString('en-GB')}</div>
+          </div>` : `
+          <div style="text-align:center;margin-bottom:10px;">
+            <div style="font-size:12px;font-weight:bold;color:${themeColor};">പയറ്റ് കണക്ക് (തുടർച്ച...)</div>
+          </div>
+          `}
+          ${tableHtml}
         `;
         document.body.appendChild(container);
 
@@ -1071,7 +1278,7 @@ async function exportAllPdf(){
         isFirstPage = false;
       }
       
-      pdf.save('payat-ledger-all-' + todayStr() + '.pdf');
+      pdf.save('payat-ledger-all-compact-' + todayStr() + '.pdf');
     } catch(err) {
       console.error(err);
       alert('PDF ഉണ്ടാക്കാൻ പറ്റിയില്ല. ബ്രൗസർ പ്രശ്നമാകാം.');
@@ -1096,7 +1303,7 @@ let secretTimer = null;
 function secretAdminTrigger() {
   secretClicks++;
   clearTimeout(secretTimer);
-  secretTimer = setTimeout(() => { secretClicks = 0; }, 3000); // 3 സെക്കൻഡ് സമയം നൽകിയിട്ടുണ്ട്
+  secretTimer = setTimeout(() => { secretClicks = 0; }, 3000);
   if(secretClicks >= 5) {
     openSyncModal();
     secretClicks = 0;
@@ -1114,7 +1321,11 @@ const APPS_SCRIPT_CODE = `function doGet(e) {
     var rows = usersSheet.getDataRange().getValues();
     var users = [];
     for (var i=1;i<rows.length;i++){
-      if (rows[i][0]) users.push({username: rows[i][0], password: rows[i][1]});
+      if (rows[i][0]) users.push({
+        username: rows[i][0], 
+        password: rows[i][1], 
+        expiry: rows[i][2] || ''
+      });
     }
     return ContentService.createTextOutput(JSON.stringify(users)).setMimeType(ContentService.MimeType.JSON);
   }
@@ -1133,9 +1344,44 @@ function doPost(e) {
   if (action === 'addUser') {
     var usersSheet = ss.getSheetByName('Users') || ss.insertSheet('Users');
     if (usersSheet.getRange(1,1).getValue() === '') {
-      usersSheet.getRange(1,1,1,2).setValues([['username','password']]);
+      usersSheet.getRange(1,1,1,3).setValues([['username','password', 'expiry']]);
     }
-    usersSheet.appendRow([body.username, body.password]);
+    var days = parseInt(body.days) || 365;
+    var expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + days);
+    var expStr = expiryDate.toISOString().split('T')[0];
+    usersSheet.appendRow([body.username, body.password, expStr]);
+    return ContentService.createTextOutput(JSON.stringify({status:'ok'})).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  if (action === 'changePassword') {
+    var usersSheet = ss.getSheetByName('Users');
+    if(usersSheet) {
+      var rows = usersSheet.getDataRange().getValues();
+      for(var i=1; i<rows.length; i++) {
+        if(rows[i][0] === body.username) {
+          usersSheet.getRange(i+1, 2).setValue(body.newPassword);
+          break;
+        }
+      }
+    }
+    return ContentService.createTextOutput(JSON.stringify({status:'ok'})).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  if (action === 'renewUser') {
+    var usersSheet = ss.getSheetByName('Users');
+    if(usersSheet) {
+      var rows = usersSheet.getDataRange().getValues();
+      for(var i=1; i<rows.length; i++) {
+        if(rows[i][0] === body.username) {
+          var days = parseInt(body.days) || 365;
+          var newExp = new Date();
+          newExp.setDate(newExp.getDate() + days);
+          usersSheet.getRange(i+1, 3).setValue(newExp.toISOString().split('T')[0]);
+          break;
+        }
+      }
+    }
     return ContentService.createTextOutput(JSON.stringify({status:'ok'})).setMimeType(ContentService.MimeType.JSON);
   }
 
@@ -1168,13 +1414,6 @@ function copyAppsScript(){
   });
 }
 
-function handleSyncBadgeClick() {
-  const loggedUser = localStorage.getItem('payat_logged_user');
-  if(loggedUser && loggedUser.toLowerCase() === 'admin') {
-    openSyncModal();
-  }
-}
-
 function openSyncModal(){
   document.getElementById('sheetUrl').value = sheetUrl;
   document.getElementById('syncStatusLine').textContent = sheetUrl ? '✓ Connected' : 'ഇതുവരെ setup ചെയ്തിട്ടില്ല';
@@ -1199,31 +1438,21 @@ async function saveSyncUrl(){
         ledger = data;
       }
     }
-    setSyncBadge('ok','✓ Sheets');
     document.getElementById('syncStatusLine').textContent = '✓ Connected ആയി!';
     renderAll();
     loadUserList();
     closeSyncModal();
   } catch(err){
-    setSyncBadge('err','✕ Sheets');
     document.getElementById('syncStatusLine').textContent = '✕ Connect ആയില്ല. URL ശരിയാണോ എന്ന് നോക്കുക, Deploy access "Anyone" ആണോ എന്നും ഉറപ്പിക്കുക.';
   }
-}
-
-function setSyncBadge(state, text){
-  const badge = document.getElementById('syncBadge');
-  badge.className = 'sync-badge ' + state;
-  badge.textContent = text;
 }
 
 function queueSync(){
   if(!sheetUrl){
     localStorage.setItem('payat_local_data', JSON.stringify(ledger.map(p=>({...p,_open:undefined}))));
-    setSyncBadge('ok','💾 Saved');
     return;
   }
   clearTimeout(syncTimer);
-  setSyncBadge('', '⏳ Saving...');
   syncTimer = setTimeout(doSync, 900);
 }
 
@@ -1234,10 +1463,9 @@ async function doSync(){
       headers:{'Content-Type':'text/plain'},
       body: JSON.stringify(ledger.map(p=>({...p, _open:undefined})))
     });
-    setSyncBadge('ok','✓ Saved');
     await loadFromSheetOnStart(true);
   }catch(err){
-    setSyncBadge('err','✕ Sync failed');
+    console.error('Sync failed');
   }
 }
 
@@ -1257,10 +1485,64 @@ async function loadFromSheetOnStart(preserveOpenState){
       }
       ledger = data;
       renderAll();
-      setSyncBadge('ok','✓ Sheets');
     }
   }catch(err){
-    setSyncBadge('err','✕ Sheets');
+    console.error('Failed to load from sheets');
+  }
+}
+
+// ================== PASSWORD CHANGE & SUBSCRIPTION ==================
+function openChangePasswordModal() {
+  document.getElementById('newPasswordInput').value = '';
+  document.getElementById('changePasswordModalOverlay').classList.add('open');
+}
+function closeChangePasswordModal() {
+  document.getElementById('changePasswordModalOverlay').classList.remove('open');
+}
+async function processChangePassword() {
+  const newPass = document.getElementById('newPasswordInput').value.trim();
+  if(!newPass) { alert('പുതിയ പാസ്‌വേഡ് നൽകുക!'); return; }
+  if(!sheetUrl) { alert('ഷീറ്റ് കണക്ട് ചെയ്തിട്ടില്ല.'); return; }
+
+  const loggedUser = localStorage.getItem('payat_logged_user');
+  if(!loggedUser) return;
+
+  try {
+    const btn = document.querySelector('#changePasswordModalOverlay .btn-primary');
+    const oldText = btn.textContent;
+    btn.textContent = 'സേവ് ചെയ്യുന്നു...';
+    btn.disabled = true;
+
+    await fetch(sheetUrl, {
+      method: 'POST',
+      headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify({ action: 'changePassword', username: loggedUser, newPassword: newPass })
+    });
+    
+    alert('പാസ്‌വേഡ് വിജയകരമായി മാറ്റിയിട്ടുണ്ട്!');
+    closeChangePasswordModal();
+    btn.textContent = oldText;
+    btn.disabled = false;
+  } catch(e) {
+    alert('എന്തോ പ്രശ്നമുണ്ട്. വീണ്ടും ശ്രമിക്കുക.');
+  }
+}
+
+async function renewUser(username) {
+  const selectBox = document.getElementById('renewDays_' + username);
+  const days = selectBox.value;
+  if(!confirm(`${username} -ന് അടുത്ത ${days} ദിവസത്തേക്ക് ആക്സസ് നൽകണമെന്നുറപ്പാണോ?`)) return;
+  
+  try {
+    await fetch(sheetUrl, {
+      method: 'POST',
+      headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify({ action: 'renewUser', username: username, days: days })
+    });
+    alert(`${username} വിജയകരമായി പുതുക്കിയിരിക്കുന്നു!`);
+    loadUserList(); 
+  } catch(e) {
+    alert('പുതുക്കാൻ കഴിഞ്ഞില്ല.');
   }
 }
 
@@ -1296,6 +1578,21 @@ async function attemptLogin(){
       errEl.textContent = 'Username അല്ലെങ്കിൽ Password തെറ്റാണ്.';
       return;
     }
+
+    // Subscription Logic (Admin Bypass)
+    if(user.toLowerCase() !== 'admin') {
+      if(match.expiry) {
+        const expDate = new Date(match.expiry);
+        const today = new Date();
+        expDate.setHours(0,0,0,0);
+        today.setHours(0,0,0,0);
+        if(today > expDate) {
+           errEl.textContent = 'നിങ്ങളുടെ അക്കൗണ്ട് കാലാവധി കഴിഞ്ഞിരിക്കുന്നു. അഡ്മിനുമായി ബന്ധപ്പെടുക.';
+           return;
+        }
+      }
+    }
+
     localStorage.setItem('payat_logged_user', user);
     showApp();
   }catch(err){
@@ -1307,13 +1604,12 @@ function showApp(){
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('appRoot').style.display = 'block';
   
-  // അഡ്മിൻ ആണെങ്കിൽ മാത്രം Sheets ബാഡ്ജ് കാണിക്കുക
   const loggedUser = localStorage.getItem('payat_logged_user') || '';
-  const syncBadge = document.getElementById('syncBadge');
+  const adminMenuSync = document.getElementById('adminMenuSync');
   if(loggedUser.toLowerCase() === 'admin') {
-    syncBadge.style.display = 'inline-block';
+    adminMenuSync.style.display = 'block';
   } else {
-    syncBadge.style.display = 'none';
+    adminMenuSync.style.display = 'none';
   }
 
   renderAll();
@@ -1338,7 +1634,29 @@ async function loadUserList(){
       box.innerHTML = '<div style="font-size:0.8rem;color:#9b8c6c;">ഇതുവരെ users ഇല്ല.</div>';
       return;
     }
-    box.innerHTML = users.map(u => `<div style="font-family:'Courier Prime',monospace;font-size:0.82rem;padding:4px 0;border-bottom:1px solid var(--line);">👤 ${u.username}</div>`).join('');
+    box.innerHTML = users.map(u => {
+      let extra = '';
+      if(u.username.toLowerCase() !== 'admin') {
+        const isExp = u.expiry ? (new Date() > new Date(u.expiry)) : false;
+        const color = isExp ? '#d32f2f' : '#2f5d3a';
+        const expDateStr = u.expiry ? u.expiry : 'No Expiry';
+        extra = `<div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-top:4px;">
+                   <span style="color:${color};font-size:0.7rem;">Exp: ${expDateStr}</span>
+                   <div style="display:flex; gap:4px;">
+                     <select id="renewDays_${u.username}" style="font-size:0.7rem; padding:2px; border-radius:4px; border:1px solid #ccc;">
+                        <option value="90">90 Days</option>
+                        <option value="180">180 Days</option>
+                        <option value="365" selected>365 Days</option>
+                     </select>
+                     <button onclick="renewUser('${u.username}')" style="padding:2px 8px;font-size:0.7rem;cursor:pointer;border:1px solid var(--line);border-radius:4px;background:var(--paper-light);color:var(--maroon-deep);">🔄 Renew</button>
+                   </div>
+                 </div>`;
+      }
+      return `<div style="font-family:'Courier Prime',monospace;font-size:0.82rem;padding:8px 0;border-bottom:1px solid var(--line);display:flex;flex-direction:column;align-items:flex-start;">
+        <div style="font-weight:bold;">👤 ${u.username}</div>
+        ${extra}
+      </div>`;
+    }).join('');
   }catch(err){
     box.innerHTML = '<div style="font-size:0.8rem;color:var(--maroon);">Load ആയില്ല.</div>';
   }
@@ -1355,17 +1673,19 @@ function closeAddUserModal(){
 async function saveNewUser(){
   const username = document.getElementById('newUserName').value.trim();
   const password = document.getElementById('newUserPass').value;
+  const days = document.getElementById('newUserDays').value;
+  
   if(!username || !password){ alert('Username, Password രണ്ടും നൽകുക.'); return; }
   if(!sheetUrl){ alert('ആദ്യം Sheets URL save ചെയ്യുക.'); return; }
   try{
     await fetch(sheetUrl + '?action=addUser', {
       method:'POST',
       headers:{'Content-Type':'text/plain'},
-      body: JSON.stringify({action:'addUser', username, password})
+      body: JSON.stringify({action:'addUser', username: username, password: password, days: days})
     });
     closeAddUserModal();
     loadUserList();
-    alert(`പുതിയ User '${username}' വിജയകരമായി ചേർത്തു!`);
+    alert(`പുതിയ User '${username}' വിജയകരമായി ചേർത്തു! അവർക്ക് ${days} ദിവസത്തെ ആക്സസ് ലഭിച്ചിട്ടുണ്ട്.`);
   }catch(err){
     alert('User ചേർക്കാൻ പറ്റിയില്ല.');
   }
@@ -1438,6 +1758,7 @@ function processExcelImport(){
 }
 
 // ================== INIT ==================
+loadTheme();
 loadSheetUrlFromStorage();
 const alreadyLoggedIn = localStorage.getItem('payat_logged_user');
 

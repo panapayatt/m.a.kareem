@@ -479,7 +479,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-<!-- Login screen -->
 <div id="loginScreen" class="login-screen">
   <div class="login-box">
     <div class="login-logo">📖</div>
@@ -507,15 +506,17 @@
         <h1>📖 പയറ്റ് കണക്ക്</h1>
         <div class="sub">PAYAT LEDGER &middot; RECORD</div>
       </div>
-      <!-- Dropdown Menu -->
       <div class="menu-container">
         <button class="menu-btn" onclick="toggleMenu()">⋮</button>
         <div id="mainMenu" class="menu-content">
           <button class="menu-item" onclick="openImportModal(); toggleMenu();">📊 Excel Import</button>
-          <button class="menu-item" onclick="openAddUserModal(); toggleMenu();">👤 പുതിയ User</button>
+          <button class="menu-item" onclick="exportToExcel(); toggleMenu();">📤 Share to Excel</button>
           <button class="menu-item" onclick="openChangePasswordModal(); toggleMenu();">🔑 Password മാറ്റുക</button>
           <button class="menu-item" onclick="openThemeModal(); toggleMenu();">🎨 തീം (Theme)</button>
-          <button class="menu-item" id="adminMenuSync" style="display:none;" onclick="openSyncModal(); toggleMenu();">⚙ Sheets Setup</button>
+          
+          <button class="menu-item" id="adminMenuAddUser" style="display:none;" onclick="openAddUserModal(); toggleMenu();">👤 പുതിയ User (Admin)</button>
+          <button class="menu-item" id="adminMenuSync" style="display:none;" onclick="openSyncModal(); toggleMenu();">⚙ Sheets Setup (Admin)</button>
+          
           <button class="menu-item logout" onclick="logout()">⎋ Logout</button>
         </div>
       </div>
@@ -548,12 +549,7 @@
 
   <main id="mainList"></main>
 
-</div><!-- /appRoot -->
-
-<!-- Modals -->
-
-<!-- Theme Selection Modal -->
-<div class="modal-overlay" id="themeModalOverlay">
+</div><div class="modal-overlay" id="themeModalOverlay">
   <div class="modal">
     <h2>കളർ തീം മാറ്റുക</h2>
     <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:15px;">
@@ -569,7 +565,6 @@
   </div>
 </div>
 
-<!-- Change Password Modal -->
 <div class="modal-overlay" id="changePasswordModalOverlay">
   <div class="modal">
     <h2>പാസ്‌വേഡ് മാറ്റുക</h2>
@@ -584,7 +579,6 @@
   </div>
 </div>
 
-<!-- New / Edit person modal -->
 <div class="modal-overlay" id="personModalOverlay">
   <div class="modal">
     <h2 id="personModalTitle">പുതിയ ഇടപാട്</h2>
@@ -636,7 +630,6 @@
   </div>
 </div>
 
-<!-- Add/Edit transaction modal -->
 <div class="modal-overlay" id="txModalOverlay">
   <div class="modal">
     <h2 id="txModalTitle">ഇടപാട് ചേർക്കുക</h2>
@@ -674,7 +667,6 @@
   </div>
 </div>
 
-<!-- Admin Only Sync setup modal -->
 <div class="modal-overlay" id="syncModalOverlay">
   <div class="modal">
     <h2>Admin Area: Sheets Sync</h2>
@@ -685,7 +677,7 @@
       3. താഴെ കോപ്പി ചെയ്ത് പഴയത് മാറ്റി അവിടെ paste ചെയ്യുക.<br>
       4. Deploy → <b>New deployment</b> → <b>Web app</b> → <b>Anyone</b> → Deploy.<br>
       5. പുതിയ URL ഇവിടെ paste ചെയ്ത് "സേവ് &amp; ടെസ്റ്റ്" അമർത്തുക.<br>
-      6. താഴെ "+ പുതിയ User ചേർക്കുക" വഴി അഡ്മിൻ യൂസറിനെ <b>admin</b> എന്ന പേരിൽ ചേർക്കുക.
+      (Admin യൂസർ ഇനി ഓട്ടോമാറ്റിക് ആയി ക്രിയേറ്റ് ആകും. മറ്റ് യൂസർമാരെ താഴെ നിന്ന് ചേർക്കാം).
     </div>
     <button class="btn btn-ghost btn-sm" style="width:100%;margin-bottom:8px;" onclick="copyAppsScript()">📋 Script Copy ചെയ്യുക</button>
     <textarea id="scriptTextarea" readonly rows="3" onclick="this.select()" style="width:100%;font-family:monospace;font-size:0.7rem;padding:8px;border:1.5px solid var(--line);border-radius:5px;background:#fff;resize:vertical;margin-bottom:8px;"></textarea>
@@ -707,7 +699,6 @@
   </div>
 </div>
 
-<!-- Add user modal -->
 <div class="modal-overlay" id="addUserModalOverlay">
   <div class="modal">
     <h2>പുതിയ User</h2>
@@ -734,7 +725,6 @@
   </div>
 </div>
 
-<!-- Excel Import Modal -->
 <div class="modal-overlay" id="importModalOverlay">
   <div class="modal">
     <h2>Excel-ൽ നിന്നും ഡാറ്റ ചേർക്കുക</h2>
@@ -1056,7 +1046,7 @@ function deletePerson(personId){
   queueSync();
 }
 
-// ================== PDF EXPORT ==================
+// ================== PDF & EXCEL EXPORT ==================
 function buildPersonHtmlBlock(p){
   const t = personTotals(p);
   const themeColor = getThemeColor();
@@ -1142,7 +1132,6 @@ async function renderHtmlToPdf(innerHtml, filename, title){
   }
 }
 
-// "All PDF" കോംപാക്റ്റ് എക്സൽ ഡിസൈൻ
 async function exportAllPdf(){
   if(ledger.length===0){ alert('ഡാറ്റ ഒന്നും ഇല്ല.'); return; }
   
@@ -1297,6 +1286,57 @@ async function exportPersonPdf(personId){
   await renderHtmlToPdf(html, 'payat-' + safeName + '-' + todayStr() + '.pdf', p.name + ' - പയറ്റ് കണക്ക്');
 }
 
+// എക്സലിലേക്ക് (CSV) ഡാറ്റ മാറ്റാൻ 
+function exportToExcel() {
+  if(ledger.length === 0) { alert('ഡാറ്റ ഒന്നും ഇല്ല.'); return; }
+
+  let csvContent = '\uFEFF'; 
+  csvContent += "ID,പേര്,ഫോൺ,തിയ്യതി,സ്ഥലം,തരം,തുക,കിട്ടാനുള്ളത്,കുറിപ്പ്,ബാക്കി (Net)\n";
+
+  const escapeCSV = (str) => {
+    if (str === null || str === undefined) return '""';
+    return '"' + String(str).replace(/"/g, '""') + '"';
+  };
+
+  ledger.forEach(p => {
+    const t = personTotals(p);
+    const netDue = Math.abs(t.due);
+    const dueStatus = t.due > 0 ? `കിട്ടാൻ ബാക്കി: ${netDue}` : (t.due < 0 ? `അധികം കിട്ടി: ${netDue}` : 'തീർന്നു');
+
+    if(p.transactions.length === 0) {
+      csvContent += [escapeCSV(p.customId), escapeCSV(p.name), escapeCSV(p.phone), '""', '""', '""', '""', '""', '""', escapeCSV(dueStatus)].join(',') + '\n';
+    } else {
+      const sortedTx = p.transactions.slice().sort((a,b)=>a.date.localeCompare(b.date));
+      sortedTx.forEach((tx, idx) => {
+        const typeLabel = tx.type === 'out' ? 'പയറ്റി' : 'തിരിച്ചു കിട്ടി';
+        const expectedVal = tx.type === 'out' ? (tx.expected || tx.amount) : '';
+        const netStatus = idx === 0 ? dueStatus : ''; 
+
+        csvContent += [
+          escapeCSV(p.customId),
+          escapeCSV(p.name),
+          escapeCSV(p.phone),
+          escapeCSV(fmtDate(tx.date)),
+          escapeCSV(tx.place),
+          escapeCSV(typeLabel),
+          escapeCSV(tx.amount),
+          escapeCSV(expectedVal),
+          escapeCSV(tx.note),
+          escapeCSV(netStatus)
+        ].join(',') + '\n';
+      });
+    }
+  });
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "payat_ledger_" + todayStr() + ".csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 // ================== ADMIN SECRET TRIGGER ==================
 let secretClicks = 0;
 let secretTimer = null;
@@ -1317,13 +1357,23 @@ const APPS_SCRIPT_CODE = `function doGet(e) {
 
   if (action === 'getUsers') {
     var usersSheet = ss.getSheetByName('Users');
-    if (!usersSheet) return ContentService.createTextOutput('[]').setMimeType(ContentService.MimeType.JSON);
+    if (!usersSheet) {
+      usersSheet = ss.insertSheet('Users');
+      usersSheet.appendRow(['username', 'password', 'expiry']);
+      usersSheet.appendRow(['admin', '1319', '']);
+    } else if (usersSheet.getLastRow() <= 1) {
+      if (usersSheet.getLastRow() === 0) {
+        usersSheet.appendRow(['username', 'password', 'expiry']);
+      }
+      usersSheet.appendRow(['admin', '1319', '']);
+    }
+    
     var rows = usersSheet.getDataRange().getValues();
     var users = [];
     for (var i=1;i<rows.length;i++){
       if (rows[i][0]) users.push({
-        username: rows[i][0], 
-        password: rows[i][1], 
+        username: String(rows[i][0]), 
+        password: String(rows[i][1]), 
         expiry: rows[i][2] || ''
       });
     }
@@ -1359,7 +1409,7 @@ function doPost(e) {
     if(usersSheet) {
       var rows = usersSheet.getDataRange().getValues();
       for(var i=1; i<rows.length; i++) {
-        if(rows[i][0] === body.username) {
+        if(String(rows[i][0]) === String(body.username)) {
           usersSheet.getRange(i+1, 2).setValue(body.newPassword);
           break;
         }
@@ -1373,7 +1423,7 @@ function doPost(e) {
     if(usersSheet) {
       var rows = usersSheet.getDataRange().getValues();
       for(var i=1; i<rows.length; i++) {
-        if(rows[i][0] === body.username) {
+        if(String(rows[i][0]) === String(body.username)) {
           var days = parseInt(body.days) || 365;
           var newExp = new Date();
           newExp.setDate(newExp.getDate() + days);
@@ -1570,7 +1620,7 @@ async function attemptLogin(){
     const res = await fetch(sheetUrl + '?action=getUsers');
     const users = await res.json();
     if(!Array.isArray(users) || users.length===0){
-      errEl.textContent = 'ഒരു User-ഉം ഇതുവരെ ചേർത്തിട്ടില്ല. അഡ്മിൻ ആക്സസ് വഴി ഒന്ന് ചേർക്കുക.';
+      errEl.textContent = 'എന്തോ പ്രശ്നമുണ്ട്. അഡ്മിൻ അക്കൗണ്ട് ലഭ്യമായില്ല.';
       return;
     }
     const match = users.find(u => u.username===user && String(u.password)===pass);
@@ -1606,10 +1656,14 @@ function showApp(){
   
   const loggedUser = localStorage.getItem('payat_logged_user') || '';
   const adminMenuSync = document.getElementById('adminMenuSync');
+  const adminMenuAddUser = document.getElementById('adminMenuAddUser');
+  
   if(loggedUser.toLowerCase() === 'admin') {
-    adminMenuSync.style.display = 'block';
+    if(adminMenuSync) adminMenuSync.style.display = 'block';
+    if(adminMenuAddUser) adminMenuAddUser.style.display = 'block';
   } else {
-    adminMenuSync.style.display = 'none';
+    if(adminMenuSync) adminMenuSync.style.display = 'none';
+    if(adminMenuAddUser) adminMenuAddUser.style.display = 'none';
   }
 
   renderAll();
@@ -1639,7 +1693,14 @@ async function loadUserList(){
       if(u.username.toLowerCase() !== 'admin') {
         const isExp = u.expiry ? (new Date() > new Date(u.expiry)) : false;
         const color = isExp ? '#d32f2f' : '#2f5d3a';
-        const expDateStr = u.expiry ? u.expiry : 'No Expiry';
+        
+        let expDateStr = 'No Expiry';
+        if(u.expiry) {
+           const rawDate = String(u.expiry).split('T')[0];
+           const dt = new Date(rawDate + 'T00:00:00');
+           expDateStr = dt.toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
+        }
+
         extra = `<div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-top:4px;">
                    <span style="color:${color};font-size:0.7rem;">Exp: ${expDateStr}</span>
                    <div style="display:flex; gap:4px;">
